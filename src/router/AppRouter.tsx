@@ -6,6 +6,9 @@ import Unauthorized from "./Unauthorized";
 import MainContainer from "../container/main.container";
 import UsersList from "../features/users/getAllUser";
 import DisputesList from "../features/disputes/getAllDisputes";
+const DisputeDetail = React.lazy(() => import("../features/disputes/getDetailDispute"));
+import BookingsList from "../features/bookings/getAllBookings";
+const BookingDetail = React.lazy(() => import("../features/bookings/getDetailBooking"));
 const UserDetail = React.lazy(() => import("../features/users/getDetailUser"));
 
 const Profile: React.FC = () => {
@@ -43,6 +46,43 @@ const AppRouter: React.FC = () => {
 						<ProtectedRoute requiredRole="ADMIN">
 							{/* Redirect root to /users */}
 							<Navigate to="/users" replace />
+						</ProtectedRoute>
+					}
+				/>
+
+				<Route
+					path="/bookings"
+					element={
+						<ProtectedRoute requiredRole="ADMIN">
+							<MainContainer>
+								<BookingsList />
+							</MainContainer>
+						</ProtectedRoute>
+					}
+				/>
+
+				<Route
+					path="/bookings/:id"
+					element={
+						<ProtectedRoute requiredRole="ADMIN">
+							<MainContainer>
+								<React.Suspense fallback={<div>Loading...</div>}>
+									<BookingDetail />
+								</React.Suspense>
+							</MainContainer>
+						</ProtectedRoute>
+					}
+				/>
+
+				<Route
+					path="/disputes/:id"
+					element={
+						<ProtectedRoute requiredRole="ADMIN">
+							<MainContainer>
+								<React.Suspense fallback={<div>Loading...</div>}>
+									<DisputeDetail />
+								</React.Suspense>
+							</MainContainer>
 						</ProtectedRoute>
 					}
 				/>

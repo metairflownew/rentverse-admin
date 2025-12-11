@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { disputeRepository } from "./data/dispute.repository.impl";
 import type { Dispute, ResolveDisputeRequest } from "./domain/dispute.entity";
+import { Link } from "react-router-dom";
+import { bookingRepository } from "../bookings/data/booking.repository.impl";
 
 const RESOLUTION_OPTIONS = ["REFUND_TENANT", "PAYOUT_LANDLORD", "REJECT_DISPUTE"] as const;
 
@@ -14,6 +16,9 @@ const DisputesList: React.FC = () => {
   const [resolution, setResolution] = useState<typeof RESOLUTION_OPTIONS[number] | "">("");
   const [adminNotes, setAdminNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
+  const [pageView, setPageView] = useState<"list" | "bookingDetail">("list");
 
   const fetchDisputes = async () => {
     setLoading(true);
@@ -30,6 +35,14 @@ const DisputesList: React.FC = () => {
 
   useEffect(() => {
     fetchDisputes();
+    (async () => {
+      try {
+        const res = await bookingRepository.getBookings({ limit: 200 });
+        setBookings(res.data || []);
+      } catch (e) {
+        // ignore booking fetch errors
+      }
+    })();
   }, []);
 
   const openResolve = (d: Dispute) => {
@@ -101,13 +114,28 @@ const DisputesList: React.FC = () => {
                 <td className="px-4 py-3">{(d.createdAt || "").slice(0, 10)}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
+                    {d.status === 'RESOLVED' ? (
+                      <Link to={`/disputes/${d.id}`} className="px-3 py-1 rounded border text-sm">Update</Link>
+                    ) : (
+                      <button
+                        onClick={() => openResolve(d)}
+                        className="px-3 py-1 rounded bg-blue-600 text-white text-sm"
+                      >
+                        Resolve
+                      </button>
+                    )}
+
                     <button
-                      onClick={() => openResolve(d)}
-                      className="px-3 py-1 rounded bg-blue-600 text-white text-sm"
+                      onClick={() => {
+                        const b = bookings.find((x) => x.id === d.bookingId) || d.booking || null;
+                        setSelectedBooking(b);
+                        setSelected(d);
+                        setPageView("bookingDetail");
+                      }}
+                      className="px-3 py-1 rounded border text-sm"
                     >
-                      Resolve
+                      Booking
                     </button>
-                    <a href={`/bookings/${d.bookingId}`} className="px-3 py-1 rounded border text-sm">Booking</a>
                   </div>
                 </td>
               </tr>
@@ -115,6 +143,73 @@ const DisputesList: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Booking detail view (replaces list) */}
+      {pageView === "bookingDetail" && selectedBooking && selected && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Booking / Dispute Detail</h2>
+            <div>
+              <button onClick={() => { setPageView("list"); setSelectedBooking(null); setSelected(null); }} className="px-3 py-1 rounded border">Back</button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded shadow p-4 mb-4">
+            <h3 className="font-medium">Dispute</h3>
+            <div className="mt-2"><strong>Reason:</strong> {selected.reason}</div>
+            <div className="mt-1"><strong>Status:</strong> {selected.status}</div>
+            <div className="mt-1"><strong>Resolution:</strong> {selected.resolution || '-'}</div>
+            <div className="mt-1"><strong>Admin Notes:</strong> {selected.adminNotes || '-'}</div>
+          </div>
+
+          <div className="bg-white rounded shadow p-4 mb-4">
+            <h3 className="font-medium">Booking</h3>
+            <div className="mt-2"><strong>Booking ID:</strong> {selectedBooking.id}</div>
+            <div className="mt-1"><strong>Status:</strong> {selectedBooking.status || '-'}</div>
+            <div className="mt-1"><strong>Property:</strong> {selectedBooking.property?.title || '-'}</div>
+            <div className="mt-1"><strong>Payment:</strong> {selectedBooking.payment?.status || '-'}</div>
+          </div>
+
+          <h3 className="text-lg font-medium mb-2">Summary</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white rounded p-4">
+              <h4 className="font-semibold mb-2">Dispute Details</h4>
+              <div className="text-sm text-gray-700 space-y-2">
+                <div><span className="font-medium">ID:</span> {selected.id}</div>
+                <div><span className="font-medium">Booking ID:</span> {selected.bookingId}</div>
+                <div><span className="font-medium">Initiator:</span> {selected.initiator?.name || selected.initiator?.email || '-'}</div>
+                <div><span className="font-medium">Reason:</span> {selected.reason || '-'}</div>
+                <div><span className="font-medium">Description:</span> {selected.description || '-'}</div>
+                <div><span className="font-medium">Status:</span> <span className={`inline-flex items-center px-2 py-1 rounded text-sm font-medium ${selected.status === 'RESOLVED' ? 'bg-green-100 text-green-800' : selected.status === 'REJECTED' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-700'}`}>{selected.status || '-'}</span></div>
+                <div><span className="font-medium">Resolution:</span> {selected.resolution || '-'}</div>
+                <div><span className="font-medium">Admin Notes:</span> {selected.adminNotes || '-'}</div>
+                <div className="text-xs text-gray-500"><span className="font-medium">Created:</span> {(selected.createdAt || '').slice(0,19).replace('T',' ') || '-'}</div>
+                <div className="text-xs text-gray-500"><span className="font-medium">Resolved At:</span> {(selected.resolvedAt || '').slice(0,19).replace('T',' ') || '-'}</div>
+                <div className="text-xs text-gray-500"><span className="font-medium">Resolved By:</span> {selected.resolvedBy || '-'}</div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded p-4">
+              <h4 className="font-semibold mb-2">Booking Details</h4>
+              {selectedBooking ? (
+                <div className="text-sm text-gray-700 space-y-2">
+                  <div><span className="font-medium">ID:</span> {selectedBooking.id}</div>
+                  <div><span className="font-medium">Status:</span> {selectedBooking.status || '-'}</div>
+                  <div><span className="font-medium">Property:</span> {selectedBooking.property?.title || '-'}</div>
+                  <div><span className="font-medium">City:</span> {selectedBooking.property?.city || '-'}</div>
+                  <div><span className="font-medium">Start:</span> {(selectedBooking.startDate || '').slice(0,10) || '-'}</div>
+                  <div><span className="font-medium">End:</span> {(selectedBooking.endDate || '').slice(0,10) || '-'}</div>
+                  <div><span className="font-medium">Payment:</span> {selectedBooking.payment?.status || '-'} {selectedBooking.payment?.amount ? `(${selectedBooking.payment.amount})` : ''}</div>
+                  <div className="text-xs text-gray-500"><span className="font-medium">Booked At:</span> {(selectedBooking.createdAt || '').slice(0,19).replace('T',' ') || '-'}</div>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500">No booking data available for this dispute.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && selected && (
