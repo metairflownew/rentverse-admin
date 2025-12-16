@@ -7,6 +7,12 @@ const PropertiesList: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "PENDING" | "VERIFIED">("ALL");
+  const [search, setSearch] = useState("");
+  const [meta, setMeta] = useState<{ page?: number; totalPages?: number; hasNextPage?: boolean; hasPrevPage?: boolean } | null>(null);
+
   const [showModal, setShowModal] = useState(false);
   const [selected, setSelected] = useState<Property | null>(null);
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
@@ -17,8 +23,14 @@ const PropertiesList: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await propertyRepository.getProperties({ limit: 50 });
+      const res = await propertyRepository.getProperties({
+        page,
+        limit,
+        search: search.trim() || undefined,
+        status: statusFilter === "ALL" ? undefined : statusFilter,
+      });
       setProperties(res.data || []);
+      setMeta(res.meta || null);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load properties");
     } finally {
@@ -28,7 +40,7 @@ const PropertiesList: React.FC = () => {
 
   useEffect(() => {
     fetchProperties();
-  }, []);
+  }, [page, limit, statusFilter, search]);
 
   const openVerify = (p: Property, preset?: { isVerified?: boolean | null; rejectionReason?: string | null }) => {
     setSelected(p);
@@ -61,8 +73,26 @@ const PropertiesList: React.FC = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
         <h2 className="text-xl font-semibold">Properties (Admin)</h2>
+
+        <div className="flex flex-col md:flex-row gap-2">
+          <input
+            value={search}
+            onChange={(e) => { setPage(1); setSearch(e.target.value); }}
+            placeholder="Search title or city"
+            className="rounded border px-3 py-2"
+          />
+          <select
+            value={statusFilter}
+            onChange={(e) => { setPage(1); setStatusFilter(e.target.value as typeof statusFilter); }}
+            className="rounded border px-3 py-2"
+          >
+            <option value="ALL">ALL</option>
+            <option value="PENDING">PENDING</option>
+            <option value="VERIFIED">VERIFIED</option>
+          </select>
+        </div>
       </div>
 
       {loading && <div>Loading...</div>}
@@ -74,8 +104,9 @@ const PropertiesList: React.FC = () => {
             <tr className="border-b">
               <th className="px-4 py-3">Title</th>
               <th className="px-4 py-3">City</th>
-              <th className="px-4 py-3">Verified</th>
-              <th className="px-4 py-3">Created</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Submitted</th>
+              <th className="px-4 py-3">Landlord</th>
               <th className="px-4 py-3">Action</th>
             </tr>
           </thead>
@@ -84,8 +115,13 @@ const PropertiesList: React.FC = () => {
               <tr key={p.id} className="border-b hover:bg-gray-50">
                 <td className="px-4 py-3">{p.title}</td>
                 <td className="px-4 py-3">{p.city}</td>
-                <td className="px-4 py-3">{p.isVerified ? 'Yes' : 'No'}</td>
-                <td className="px-4 py-3">{(p.createdAt || '').slice(0,10)}</td>
+                <td className="px-4 py-3">
+                  <span className={`inline-flex items-center px-2 py-1 rounded text-sm font-medium ${p.status === 'VERIFIED' || p.isVerified ? 'bg-green-100 text-green-800' : p.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-700'}`}>
+                    {p.status || (p.isVerified ? 'VERIFIED' : 'PENDING')}
+                  </span>
+                </td>
+                <td className="px-4 py-3">{(p.submittedAt || p.createdAt || '').slice(0,10)}</td>
+                <td className="px-4 py-3">{p.landlord?.name || p.landlord?.email || '-'}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
                     <button onClick={() => openVerify(p)} className="px-3 py-1 rounded bg-blue-600 text-white text-sm">Verify</button>
@@ -95,6 +131,26 @@ const PropertiesList: React.FC = () => {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex items-center justify-between mt-4">
+        <div className="text-sm text-gray-600">{meta ? `Page ${meta.page || page} / ${meta.totalPages || '-'}` : ''}</div>
+        <div className="flex gap-2">
+          <button
+            disabled={!meta?.hasPrevPage && page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="px-3 py-1 rounded border bg-white disabled:opacity-50"
+          >
+            Prev
+          </button>
+          <button
+            disabled={!meta?.hasNextPage}
+            onClick={() => setPage((p) => p + 1)}
+            className="px-3 py-1 rounded border bg-white disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
       </div>
 
       {showModal && selected && (

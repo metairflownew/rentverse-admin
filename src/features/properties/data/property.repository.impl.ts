@@ -5,7 +5,7 @@ import type { PropertyRepository, PropertiesListResponse, VerifyPropertyRequest 
 const PROPERTIES_BASE = `${baseUrl}/admin/properties`;
 
 export class PropertyRepositoryImpl implements PropertyRepository {
-  async getProperties(params?: { limit?: number; cursor?: string | null; status?: string }): Promise<PropertiesListResponse> {
+  async getProperties(params?: { page?: number; limit?: number; search?: string; status?: string }): Promise<PropertiesListResponse> {
     const res = await apiClient.get(PROPERTIES_BASE, { params });
     return res.data as PropertiesListResponse;
   }

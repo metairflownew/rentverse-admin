@@ -11,6 +11,8 @@ import BookingsList from "../features/bookings/getAllBookings";
 import PropertiesList from "../features/properties/getAllProperties";
 const BookingDetail = React.lazy(() => import("../features/bookings/getDetailBooking"));
 const UserDetail = React.lazy(() => import("../features/users/getDetailUser"));
+import PayoutsList from "../features/payouts/getAllPayouts";
+import WalletView from "../features/payouts/getWallet";
 
 const Profile: React.FC = () => {
 	const userName = typeof window !== "undefined" ? localStorage.getItem("userName") : null;
@@ -109,6 +111,28 @@ const AppRouter: React.FC = () => {
 						<ProtectedRoute requiredRole="ADMIN">
 							<MainContainer>
 								<DisputesList />
+							</MainContainer>
+						</ProtectedRoute>
+					}
+				/>
+				
+				<Route
+					path="/payouts"
+					element={
+						<ProtectedRoute requiredRole="ADMIN">
+							<MainContainer>
+								<PayoutsList />
+							</MainContainer>
+						</ProtectedRoute>
+					}
+				/>
+
+				<Route
+					path="/wallet"
+					element={
+						<ProtectedRoute requiredRole="ADMIN">
+							<MainContainer>
+								<WalletView />
 							</MainContainer>
 						</ProtectedRoute>
 					}

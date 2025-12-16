@@ -22,6 +22,20 @@ const IconDispute = () => (
   </svg>
 );
 
+const IconPayout = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4m0-8c2.21 0 4 1.79 4 4m-4-8v2m0 12v2m-6-6H4m16 0h-2" />
+  </svg>
+);
+
+const IconWallet = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7a2 2 0 012-2h12a2 2 0 012 2v1.5H6a2 2 0 00-2 2V7z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 10.5A2 2 0 016 8.5h14v7a2 2 0 01-2 2H6a2 2 0 01-2-2v-5z" />
+    <circle cx="16.5" cy="12" r="1" fill="currentColor" />
+  </svg>
+);
+
 const MainContainer: React.FC<MainContainerProps> = ({ children }) => {
   const userName = typeof window !== "undefined" ? localStorage.getItem("userName") : null;
   const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
@@ -59,6 +73,16 @@ const MainContainer: React.FC<MainContainerProps> = ({ children }) => {
           <a href="/disputes" className={navClass("/disputes")}>
             <IconDispute />
             <span className="text-sm font-medium">Disputes</span>
+          </a>
+
+          <a href="/payouts" className={navClass("/payouts")}>
+            <IconPayout />
+            <span className="text-sm font-medium">Payouts</span>
+          </a>
+
+          <a href="/wallet" className={navClass("/wallet")}>
+            <IconWallet />
+            <span className="text-sm font-medium">Wallet</span>
           </a>
         </nav>
       </aside>

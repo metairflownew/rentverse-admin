@@ -13,6 +13,17 @@ export type Property = {
   city?: string | null;
   images?: string[] | null;
   isVerified?: boolean | null;
+  status?: string | null;
+  price?: number | null;
+  currency?: string | null;
+  type?: string | null;
+  submittedAt?: string | null;
+  landlord?: {
+    id?: string | null;
+    name?: string | null;
+    email?: string | null;
+    avatarUrl?: string | null;
+  } | null;
   createdAt?: string | null;
 };
 
@@ -20,10 +31,12 @@ export type PropertiesListResponse = {
   status: string;
   message: string;
   meta?: {
-    total?: number;
+    page?: number;
     limit?: number;
-    nextCursor?: string | null;
-    hasMore?: boolean;
+    totalData?: number;
+    totalPages?: number;
+    hasNextPage?: boolean;
+    hasPrevPage?: boolean;
   } | null;
   data: Property[];
 };
@@ -34,6 +47,6 @@ export type VerifyPropertyRequest = {
 };
 
 export interface PropertyRepository {
-  getProperties(params?: { limit?: number; cursor?: string | null; status?: string }): Promise<PropertiesListResponse>;
+  getProperties(params?: { page?: number; limit?: number; search?: string; status?: string }): Promise<PropertiesListResponse>;
   verifyProperty(id: string, payload: VerifyPropertyRequest): Promise<Record<string, unknown>>;
 }
